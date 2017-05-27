@@ -4,6 +4,10 @@
 <style>
     .inactive { display: none; }
     .active { display: block; }
+    html {
+        background-color: black;
+        text-align: center;
+    }
 </style>
 <!--<link href="http://vjs.zencdn.net/5.19.2/video-js.css" rel="stylesheet">
     <script src="http://vjs.zencdn.net/5.19.2/video.min.js"></script>-->
@@ -41,6 +45,7 @@
 
             var video = $_("video");
 
+            var url = '';
             var currentTime = function () {
                 return video.currentTime;
             };
@@ -61,7 +66,7 @@
                 }
             }, 3000);
 
-            conn = new WebSocket("ws://d93cc164.ngrok.io");
+            conn = new WebSocket("ws://b241d377.ngrok.io");
             $_("#username").innerHTML = $_("#name").value;
             $_("#room").className = "active";
             $_("#registration").className = "inactive";
@@ -87,11 +92,16 @@
                     console.log('seek: ' + matches[1]);
                     video.currentTime = matches[1];
                 } else if (matches = ev.data.match(/^url (.+)$/)) {
+                    if (url != matches[1]) {
+                        url = matches[1];
+                        //var requestFullScreen = video.requestFullscreen || video.msRequestFullscreen || video.mozRequestFullScreen || video.webkitRequestFullscreen;
+                        //requestFullScreen();
+                    }
                     if (!iAmControlling()) {
-                        video.src = matches[1];
+                        video.src = url;
                     }
                     //$_("#my_video_1").innerHTML = '<source id="vidsrc" src=' + matches[1] + ' type="application/x-mpegURL">'
-                    console.log('url: ' + matches[1]);
+                    console.log('url: ' + url);
 
                     var container = document.getElementById("p-id");
 
@@ -120,28 +130,31 @@
     function $_(sel) {
         return document.querySelector(sel);
     }
+
+    $(document).keypress(function(event){
+        //q key
+        if (event.which == 113) {
+            $_("#takeControl").click();
+        }
+    });
+
 </script>
 </head>
     <body>
 
-    <div id="registration" class="active">
+    <div id="registration" class="active" style="visibility:hidden">
         <p>Username: <input id="name" /> <button id="join">Join Room</button></p>
-    </div>
-
-    <div id="room" class="inactive">
         User: <span id="username"></span>
         <button id="leave">Leave Room</button>
         <p>Users: <span id="userCount"></span></p>
         <p>Controller: <span id="controller">---</span> <button id="takeControl">Take Control</button></p>
+    </div>
+
+    <div id="room" class="inactive">
         <p id="p-id">
-                <video id="vidid" autoplay controls preload="auto">
-                    <source id="vidsrc" type="video/mp4" src="http://c0d18f4d.ngrok.io/Aladdin%20(1992)%2FAladdin.1992.720p.BRrip.x264.GAZ.YIFY.mp4">
-                </video>
-            <!--<div class="flowplayer">
-                <video id="my_video_1">
-                    <source id="vidsrc" src="" type="video/mp4" >
-                </video>
-            </div>-->
+            <video id="vidid" autoplay controls preload="auto" style="width:100%">
+                <source id="vidsrc" type="video/mp4" src="http://599b58ea.ngrok.io/Aladdin%20(1992)%2FAladdin.1992.720p.BRrip.x264.GAZ.YIFY.mp4">
+            </video>
         </p>
     </div>
     </body>
