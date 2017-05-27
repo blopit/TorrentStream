@@ -9,16 +9,16 @@
     <script src="http://vjs.zencdn.net/5.19.2/video.min.js"></script>-->
 <!-- If you'd like to support IE8 -->
 <!--<script src="http://vjs.zencdn.net/ie8/1.1.2/videojs-ie8.min.js"></script>-->
-    <!--<link href="https://unpkg.com/video.js/dist/video-js.css" rel="stylesheet">
+    <link href="https://unpkg.com/video.js/dist/video-js.css" rel="stylesheet">
     <script src="https://unpkg.com/video.js/dist/video.js"></script>
-    <script src="https://unpkg.com/videojs-contrib-hls/dist/videojs-contrib-hls.js"></script>-->
+    <script src="https://unpkg.com/videojs-contrib-hls/dist/videojs-contrib-hls.js"></script>
     <!--<link rel="stylesheet" href="http://releases.flowplayer.org/7.0.4/skin/skin.css">
     <script src="http://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script src="http://releases.flowplayer.org/7.0.4/flowplayer.min.js"></script>
     <script src="http://releases.flowplayer.org/js/flowplayer-3.2.11.min.js"></script>-->
-    <link rel="stylesheet" href="http://releases.flowplayer.org/7.0.4/skin/skin.css">
+    <!--<link rel="stylesheet" href="http://releases.flowplayer.org/7.0.4/skin/skin.css">
     <script src="http://code.jquery.com/jquery-1.12.4.min.js"></script>
-    <script src="http://releases.flowplayer.org/7.0.4/flowplayer.min.js"></script>
+    <script src="http://releases.flowplayer.org/7.0.4/flowplayer.min.js"></script>-->
 <script>
     var controller = null;
     window.onload = function() {
@@ -27,22 +27,6 @@
         var conn;
         var flag = false;
 
-        /*var playVideo = function() {
-            var playPromise = document.querySelector('video').play();
-
-            // In browsers that don’t yet support this functionality,
-            // playPromise won’t be defined.
-            if (playPromise !== undefined) {
-                playPromise.then(function() {
-                    console.log('PLAYING');
-                    // Automatic playback started!
-                }).catch(function(error) {
-                    console.log('ERROR');
-                    //$_("#my_video_1").innerHTML = '<source id="vidsrc" src="http://c0d18f4d.ngrok.io/Aladdin%20(1992)%2FAladdin.1992.720p.BRrip.x264.GAZ.YIFY.mp4" type="video/mp4" >'
-                });
-            }
-        };*/
-
         setInterval(function(){
             if (!flag) {
                 flag = true;
@@ -50,31 +34,30 @@
             }
         },1000);
 
+
+
         $_("#join").onclick = function() {
             console.log('ENTERED');
-            flowplayer(function (api) {
-                api.on("load", function (e, api) {
-                    console.log(api.engine.engineName + " engine in use");
-                });
-            });
 
-            var api = flowplayer(), currentPos;
-            currentPos = api.ready ? api.video.time : 0;
+            var video = $_("video");
 
-            api.on("seek", function() {
-                currentPos = api.ready ? api.video.time : 0;
-                if (iAmControlling()) conn.send("seek "+currentPos);
-            }).on("pause", function() {
-                currentPos = api.ready ? api.video.time : 0;
-                if (iAmControlling()) conn.send("pause "+currentPos);
-            }).on("resume", function() {
-                currentPos = api.ready ? api.video.time : 0;
-                if (iAmControlling()) conn.send("play "+currentPos);
-            });
+            var currentTime = function () {
+                return video.currentTime;
+            };
+
+            video.addEventListener("timeupdate", function() {
+                if (iAmControlling()) conn.send(currentTime());
+            }, true);
+            video.addEventListener("pause", function() {
+                if (iAmControlling()) conn.send("pause "+currentTime());
+            }, true);
+            video.addEventListener("play", function() {
+                if (iAmControlling()) conn.send("play "+currentTime());
+            }, true);
 
             setInterval(function() {
                 if (iAmControlling()) {
-                    conn.send("tick "+(api.ready ? api.video.time : 0));
+                    conn.send(currentTime());
                 }
             }, 3000);
 
@@ -84,7 +67,6 @@
             $_("#registration").className = "inactive";
 
             conn.onmessage = function (ev) {
-                var api = flowplayer();
                 var matches;
                 if (matches = ev.data.match(/^control (.+)$/)) {
                     $_("#controller").innerHTML = matches[1];
@@ -92,49 +74,33 @@
                     document.getElementById("userCount").innerHTML = matches[1];
                 } else if (matches = ev.data.match(/^pause (.+)$/)) {
                     if (iAmControlling()) return;
-
+                    video.currentTime = matches[1];
                     console.log('pause: ' + matches[1]);
-                    api.seek(matches[1], function () {
-                        api.pause();
-                    });
-
+                    video.pause();
                 } else if (matches = ev.data.match(/^play (.+)$/)) {
                     if (iAmControlling()) return;
-
+                    video.currentTime = matches[1];
                     console.log('play: ' + matches[1]);
-                    api.seek(matches[1], function () {
-                        api.resume();
-                    });
-
+                    video.play()
                 } else if (matches = ev.data.match(/^seek (.+)$/)) {
                     if (iAmControlling()) return;
                     console.log('seek: ' + matches[1]);
-                    api.seek(matches[1]);
-                } else if (matches = ev.data.match(/^tick (.+)$/)) {
-                    if (iAmControlling()) return;
-
-                    currentPos = api.ready ? api.video.time : 0;
-                    console.log('tick: ' + matches[1]);
-                    var estimatedTimeOnMaster = matches[1] + 1;
-                    if (Math.abs(estimatedTimeOnMaster-currentPos) > 5) {
-                        api.seek(estimatedTimeOnMaster);
-                    }
-
+                    video.currentTime = matches[1];
                 } else if (matches = ev.data.match(/^url (.+)$/)) {
                     if (!iAmControlling()) {
-                        //video.src = matches[1];
+                        video.src = matches[1];
                     }
                     //$_("#my_video_1").innerHTML = '<source id="vidsrc" src=' + matches[1] + ' type="application/x-mpegURL">'
                     console.log('url: ' + matches[1]);
 
-                    //var container = document.getElementById("p-id");
+                    var container = document.getElementById("p-id");
 
                 } else {
-                    /*if (iAmControlling()) return;
+                    if (iAmControlling()) return;
                     var estimatedTimeOnMaster = parseInt(ev.data)+1;
-                    if (Math.abs(estimatedTimeOnMaster-currentPos)>5) {
-                        //api.seek(estimatedTimeOnMaster);
-                    }*/
+                    if (Math.abs(estimatedTimeOnMaster-currentTime())>5) {
+                        video.currentTime = estimatedTimeOnMaster;
+                    }
 
                 }
             };
@@ -168,11 +134,9 @@
         <p>Users: <span id="userCount"></span></p>
         <p>Controller: <span id="controller">---</span> <button id="takeControl">Take Control</button></p>
         <p id="p-id">
-            <div data-ratio="0.4167" class="flowplayer">
-                <video id="vidid" autoplay>
-                    <source id="vidsrc" type="video/webm" src="http://c0d18f4d.ngrok.io/The\ Collective\ Evolution\ 3\ -\ The\ Shift\ \(2014\).webm">
+                <video id="vidid" autoplay controls preload="auto">
+                    <source id="vidsrc" type="video/mp4" src="http://c0d18f4d.ngrok.io/Aladdin%20(1992)%2FAladdin.1992.720p.BRrip.x264.GAZ.YIFY.mp4">
                 </video>
-            </div>
             <!--<div class="flowplayer">
                 <video id="my_video_1">
                     <source id="vidsrc" src="" type="video/mp4" >
